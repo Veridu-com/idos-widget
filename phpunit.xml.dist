@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit backupGlobals="true"
+		 backupStaticAttributes="false"
+		 bootstrap="test/bootstrap.php"
+		 colors="true"
+		 convertErrorsToExceptions="true"
+		 convertNoticesToExceptions="true"
+		 convertWarningsToExceptions="true"
+		 forceCoversAnnotation="false"
+		 mapTestClassNameToCoveredClassName="false"
+		 processIsolation="true"
+		 stopOnError="false"
+		 stopOnFailure="false"
+		 stopOnIncomplete="false"
+		 stopOnSkipped="false"
+		 testSuiteLoaderClass="PHPUnit_Runner_StandardTestSuiteLoader"
+		 verbose="true">
+	<testsuites>
+		<testsuite name="Unit">
+			<directory>test/Unit</directory>
+		</testsuite>
+ 		<testsuite name="Functional">
+			<directory>test/Functional</directory>
+		</testsuite>
+	</testsuites>
+	<filter>
+		<whitelist>
+			<directory suffix=".php">app</directory>
+			<exclude>
+				<directory>app/Exception</directory>
+				<directory suffix="Interface.php">app</directory>
+			</exclude>
+		</whitelist>
+		<blacklist>
+			<directory>db</directory>
+			<directory>docs</directory>
+			<directory>ideas</directory>
+			<directory>resources</directory>
+			<directory>log</directory>
+			<directory>public</directory>
+			<directory>vendor</directory>
+		</blacklist>
+	</filter>
+	<php>
+		<var name="DB_HOST" value=""/>
+		<var name="DB_PORT" value=""/>
+		<var name="DB_USER" value=""/>
+		<var name="DB_PASS" value=""/>
+		<var name="DB_NAME" value=""/>
+	</php>
+</phpunit>
