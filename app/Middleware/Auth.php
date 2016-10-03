@@ -41,14 +41,6 @@ class Auth implements MiddlewareInterface {
     const NONE = 0x00;
 
     /**
-     * Credential performing private actions
-     * Scope: Integration.
-     *
-     * @const CRED_PRIVKEY Credential Private Key
-     */
-    const BASIC = 0x01;
-
-    /**
      * Returns an authorization setup array based on available
      * authorization constants and internal handler functions.
      *
@@ -56,11 +48,6 @@ class Auth implements MiddlewareInterface {
      */
     private function authorizationSetup() : array {
         return [
-            self::BASIC => [
-                'name'    => 'BasicAuthorization',
-                'label'   => 'Basic Authorization',
-                'handler' => 'handleBasicAuthorization'
-            ]
         ];
     }
 
@@ -80,6 +67,7 @@ class Auth implements MiddlewareInterface {
 
         $name        = lcfirst($name);
         $queryParams = $request->getQueryParams();
+        
         if (isset($queryParams[$name]))
             return $queryParams[$name];
 

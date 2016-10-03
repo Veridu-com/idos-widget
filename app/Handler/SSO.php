@@ -13,11 +13,14 @@ use App\Command\SSO as SSOCommand;
 use App\Event;
 use App\Exception\BadRequest;
 use App\Validator\ValidatorInterface;
-use idOS\SDK as idosSDK;
 use Interop\Container\ContainerInterface;
 use League\Event\Emitter;
+use Psr\Http\Message\RequestInterface;
 use Respect\Validation\Validator;
 use Slim\Flash\Messages;
+use Slim\Http\Request;
+use Slim\Interfaces\RouterInterface;
+use idOS\SDK as idosSDK;
 
 /**
  * Handles SSO commands.
@@ -45,6 +48,20 @@ class SSO implements HandlerInterface {
     private $idosSDK;
 
     /**
+     * Slim Router.
+     * 
+     * Slim\Router
+     */
+    private $router;
+
+    /**
+     * Slim Request.
+     * 
+     * \Slim\Http\Request
+     */
+    private $request;
+
+    /**
      * OAuth config array.
      * 
      * @var array
@@ -61,7 +78,9 @@ class SSO implements HandlerInterface {
                 $container->get('validatorFactory')->create('SSO'),
                 $container->get('flash'),
                 $container->get('idosSDK'),
-                $container->get('eventEmitter')
+                $container->get('eventEmitter'),
+                $container->get('router'),
+                $container->get('request')
             );
         };
     }
@@ -74,12 +93,14 @@ class SSO implements HandlerInterface {
      *
      * @return void
      */
-    public function __construct(array $tokens, ValidatorInterface $validator, Messages $flash, idosSDK $idosSDK, Emitter $emitter) {
+    public function __construct(array $tokens, ValidatorInterface $validator, Messages $flash, idosSDK $idosSDK, Emitter $emitter, RouterInterface $router, RequestInterface $request) {
         $this->tokens    = $tokens;
         $this->validator = $validator;
         $this->flash     = $flash;
         $this->idosSDK   = $idosSDK;
         $this->emitter   = $emitter;
+        $this->router    = $router;
+        $this->request   = $request;
     }
 
     /**
@@ -98,7 +119,7 @@ class SSO implements HandlerInterface {
 
         $this->emitter->emit(new Event\LoginStarted($command->provider, $command->credentialPubKey));
 
-        return $this->getUrl();
+        return $this->getCallbackUrl();
     }
 
     /**
@@ -217,10 +238,16 @@ class SSO implements HandlerInterface {
         // load customer configuration here
         $providerTokens = $this->tokens[$providerName];
 
+        $uriObject = $this->request->getUri();
+
+        $baseUrl = $uriObject->getScheme() . '://' . $uriObject->getHost() . ':' . $uriObject->getPort();        
+        $uri = $this->router->pathFor('sso:callback', ['provider' => 'facebook']);
+        $callbackUrl = $baseUrl . $uri;
+
         $config = [
             'key'      => $providerTokens['sso_key'] ?? $providerTokens['key'] ?? '',
             'secret'   => $providerTokens['sso_secret'] ?? $providerTokens['secret'] ?? '',
-            'callback' => sprintf('http://sso.idos.io:8001/index.php/%s/callback/%s', __VERSION__, $providerName),
+            'callback' => $callbackUrl,
             'scope'    => $providerTokens['sso_scope'] ?? $providerTokens['scope'] ?? [],
             'options'  => $providerTokens['options'] ?? [],
             'version'  => $providerTokens['version'] ?? '',
@@ -247,7 +274,7 @@ class SSO implements HandlerInterface {
         // set flash of callback url
     }
 
-    public function getUrl() {
+    private function getCallbackUrl() {
         switch ($this->OAuthConfig['OAUTH_VERSION']) {
             case 1:
                 $url = $this->getOAuthUrl([]);
@@ -262,7 +289,7 @@ class SSO implements HandlerInterface {
         return $url->getAbsoluteUri();
     }
 
-    public function getOAuthUrl($setup = []) {
+    private function getOAuthUrl($setup = []) {
         $provider = $this->OAuthConfig['provider'];
 
         switch ($this->OAuthConfig['OAUTH_VERSION']) {
