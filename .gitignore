@@ -12,6 +12,7 @@ phinx.yml
 phpdox.xml
 phpunit.xml
 server/docker/
+resources/views/cache/*.php
 sftp-config.json
 vendor/
 humbuglog.txt
