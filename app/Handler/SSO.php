@@ -240,7 +240,8 @@ class SSO implements HandlerInterface {
 
         $uriObject = $this->request->getUri();
 
-        $baseUrl = $uriObject->getScheme() . '://' . $uriObject->getHost() . ( $uriObject->getPort() != 80 ? ':' . $uriObject->getPort() : '');        
+        $port = empty($uriObject->getPort()) ? '' : ':' . $uriObject->getPort();
+        $baseUrl = 'https://' . $uriObject->getHost() . $port;
         $uri = $this->router->pathFor('sso:callback', ['provider' => 'facebook']);
         $callbackUrl = $baseUrl . $uri;
 
