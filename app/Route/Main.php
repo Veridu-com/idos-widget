@@ -69,7 +69,7 @@ class Main implements RouteInterface {
                 '/',
                 'App\Controller\Main:listAll'
             )
-            ->add($authMiddleware(Auth::BASIC))
+            ->add($authMiddleware(Auth::NONE))
             ->setName('main:listAll');
     }
 }
