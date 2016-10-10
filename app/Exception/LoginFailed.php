@@ -7,7 +7,7 @@
 
 declare(strict_types=1);
 
-namespace App\Exception\SSO;
+namespace App\Exception;
 
 /**
  * Login failed Exception.

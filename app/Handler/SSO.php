@@ -11,8 +11,10 @@ namespace App\Handler;
 
 use App\Command\SSO as SSOCommand;
 use App\Event;
+use App\Exception;
 use App\Exception\BadRequest;
 use App\Validator\ValidatorInterface;
+use idOS\SDK as idosSDK;
 use Interop\Container\ContainerInterface;
 use League\Event\Emitter;
 use Psr\Http\Message\RequestInterface;
@@ -20,7 +22,6 @@ use Respect\Validation\Validator;
 use Slim\Flash\Messages;
 use Slim\Http\Request;
 use Slim\Interfaces\RouterInterface;
-use idOS\SDK as idosSDK;
 
 /**
  * Handles SSO commands.
@@ -112,9 +113,11 @@ class SSO implements HandlerInterface {
      */
     public function handleLogin(SSOCommand\Login $command) : string {
         $this->validator->assertProvider($command->provider, $this->tokens);
-        // assert if $command->credentialPubKey exists in idOS
 
+        // assert if $command->credentialPubKey exists in idOS
         $this->flash->addMessage('credentialPubKey', $command->credentialPubKey);
+        $this->flash->addMessage('signupHash', $command->queryParams['signupHash']);
+
         $this->setOAuthConfig($command->provider, $command->credentialPubKey);
 
         $this->emitter->emit(new Event\LoginStarted($command->provider, $command->credentialPubKey));
@@ -130,10 +133,18 @@ class SSO implements HandlerInterface {
      * @return string The redirect URL
      */
     public function handleCallback(SSOCommand\Callback $command) : array {
-        $this->validator->assertProvider($command->provider, $this->tokens);
-        $this->validator->assertFlashedPubKey($command->flashedCredentialPubKey);
+        $flashedCredentialPubKey = $this->flash->getMessage('credentialPubKey');
+        $flashedHash             = $this->flash->getMessage('signupHash');
 
-        $credentialPubKey = $command->flashedCredentialPubKey[0];
+        $this->validator->assertProvider($command->provider, $this->tokens);
+        $this->validator->assertFlashedPubKey($flashedCredentialPubKey);
+
+        $signupHash = null;
+        if (! empty($flashedHash)) {
+            $signupHash = $flashedHash[0];
+        }
+
+        $credentialPubKey = $flashedCredentialPubKey[0];
 
         // assert if $command->credentialPubKey exists in idOS
         $this->setOAuthConfig($command->provider, $credentialPubKey);
@@ -144,8 +155,9 @@ class SSO implements HandlerInterface {
                 break;
 
             case 2:
-                $this->validator->assertFlashedState($command->flashedState);
-                $state = $command->flashedState[0];
+                $flashedState = $this->flash->getMessage('state');
+                $this->validator->assertFlashedState($flashedState);
+                $state = $flashedState[0];
 
                 $tokens = $this->handleCallbackOAuth2($command->queryParams, $state);
                 break;
@@ -153,11 +165,11 @@ class SSO implements HandlerInterface {
 
         $response = $this->idosSDK
             ->Sso
-            ->createNew($command->provider, $credentialPubKey, $tokens['token'], $tokens['secret'] ?? '');
+            ->createNew($command->provider, $credentialPubKey, $tokens['token'], $tokens['secret'] ?? '', $signupHash);
 
-        if (! $response['data']) {
+        if (empty($response['data']) && ! empty($response['error'])) {
             $this->emitter->emit(new Event\LoginFailed($command->provider, $credentialPubKey));
-            throw new ProcessNotStarted();
+            throw new Exception\ProcessNotStarted($response['error']['message']);
         }
 
         $this->emitter->emit(new Event\LoginSucceeded($command->provider, $credentialPubKey));
@@ -191,7 +203,7 @@ class SSO implements HandlerInterface {
         elseif (! empty($queryParams['error']['message']))
             $error = htmlentities(urldecode($queryParams['error']['message']));
 
-        throw new App\Exception\LoginFailed($error);
+        throw new Exception\LoginFailed($error);
     }
 
     /**
@@ -240,9 +252,9 @@ class SSO implements HandlerInterface {
 
         $uriObject = $this->request->getUri();
 
-        $port = empty($uriObject->getPort()) ? '' : ':' . $uriObject->getPort();
-        $baseUrl = 'https://' . $uriObject->getHost() . $port;
-        $uri = $this->router->pathFor('sso:callback', ['provider' => $providerName]);
+        $port        = empty($uriObject->getPort()) ? '' : ':' . $uriObject->getPort();
+        $baseUrl     = 'https://' . $uriObject->getHost() . $port;
+        $uri         = $this->router->pathFor('sso:callback', ['provider' => $providerName]);
         $callbackUrl = $baseUrl . $uri;
 
         $config = [

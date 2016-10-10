@@ -67,7 +67,7 @@ class Auth implements MiddlewareInterface {
 
         $name        = lcfirst($name);
         $queryParams = $request->getQueryParams();
-        
+
         if (isset($queryParams[$name]))
             return $queryParams[$name];
 

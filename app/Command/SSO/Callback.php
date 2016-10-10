@@ -22,20 +22,6 @@ class Callback extends AbstractCommand {
     public $queryParams;
 
     /**
-     * SSO's credential public key.
-     *
-     * @var string
-     */
-    public $flashedCredentialPubKey;
-
-    /**
-     * SSO's state.
-     *
-     * @var string
-     */
-    public $flashedState;
-
-    /**
      * SSO's provider.
      *
      * @var string

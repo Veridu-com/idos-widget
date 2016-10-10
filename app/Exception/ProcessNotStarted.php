@@ -7,7 +7,7 @@
 
 declare(strict_types=1);
 
-namespace App\Exception\SSO;
+namespace App\Exception;
 
 /**
  * Login failed Exception.
@@ -23,5 +23,5 @@ class ProcessNotStarted extends AppException {
     /**
      * {@inheritdoc}
      */
-    protected $message = 'Verification process failed to start.;
+    protected $message = 'Verification process failed to start.';
 }

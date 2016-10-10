@@ -29,6 +29,13 @@ class Login extends AbstractCommand {
     public $credentialPubKey;
 
     /**
+     * Query params.
+     *
+     * @var array
+     */
+    public $queryParams;
+
+    /**
      * {@inheritdoc}
      */
     public function setParameters(array $parameters) : self {

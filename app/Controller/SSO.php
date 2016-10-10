@@ -71,6 +71,7 @@ class SSO implements ControllerInterface {
 
         $command = $this->commandFactory->create('SSO\\Login')
             ->setParameter('provider', $provider)
+            ->setParameter('queryParams', $request->getQueryParams())
             ->setParameter('credentialPubKey', $credentialPubKey);
 
         $url = $this->commandBus->handle($command);
@@ -92,13 +93,9 @@ class SSO implements ControllerInterface {
      * @return \Psr\Http\Message\ResponseInterface
      */
     public function callback(ServerRequestInterface $request, ResponseInterface $response) : ResponseInterface {
-        $provider                = $request->getAttribute('provider');
-        $flashedCredentialPubKey = $this->flash->getMessage('credentialPubKey');
-        $flashedState            = $this->flash->getMessage('state');
+        $provider = $request->getAttribute('provider');
 
         $command = $this->commandFactory->create('SSO\\Callback')
-            ->setParameter('flashedCredentialPubKey', $flashedCredentialPubKey)
-            ->setParameter('flashedState', $flashedState)
             ->setParameter('provider', $provider)
             ->setParameter('queryParams', $request->getQueryParams());
 
