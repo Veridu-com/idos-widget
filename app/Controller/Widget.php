@@ -15,10 +15,7 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Slim\Flash\Messages;
 
-/**
- * Handles requests to /signup.
- */
-class SSO implements ControllerInterface {
+class Widget implements ControllerInterface {
     /**
      * Command Bus instance.
      *
@@ -58,18 +55,46 @@ class SSO implements ControllerInterface {
     }
 
     /**
-     * Extract oAuth tokens & send idOS tokens.
+     * Extract oAuth tokens & redirects response to provider's url.
      *
      * @param \Psr\Http\Message\ServerRequestInterface $request
      * @param \Psr\Http\Message\ResponseInterface      $response
      *
      * @return \Psr\Http\Message\ResponseInterface
      */
-    public function login(ServerRequestInterface $request, ResponseInterface $response) : ResponseInterface {
+    public function sso(ServerRequestInterface $request, ResponseInterface $response) : ResponseInterface {
         $provider         = $request->getAttribute('provider');
         $credentialPubKey = $request->getAttribute('credentialPubKey');
 
-        $command = $this->commandFactory->create('SSO\\Login')
+        $command = $this->commandFactory->create('Widget\\SSO')
+            ->setParameter('provider', $provider)
+            ->setParameter('queryParams', $request->getQueryParams())
+            ->setParameter('credentialPubKey', $credentialPubKey);
+
+        $url = $this->commandBus->handle($command);
+
+        $command = $this->commandFactory->create('ResponseRedirect');
+        $command
+            ->setParameter('response', $response)
+            ->setParameter('url', $url);
+
+        return $this->commandBus->handle($command);
+    }
+
+    /**
+     * Extract oAuth tokens & redirects response to provider's url.
+     *
+     * @param \Psr\Http\Message\ServerRequestInterface $request
+     * @param \Psr\Http\Message\ResponseInterface      $response
+     *
+     * @return \Psr\Http\Message\ResponseInterface
+     */
+    public function oauth(ServerRequestInterface $request, ResponseInterface $response) : ResponseInterface {
+        $provider         = $request->getAttribute('provider');
+        $credentialPubKey = $request->getAttribute('credentialPubKey');
+        $username         = $request->getAttribute('username');
+
+        $command = $this->commandFactory->create('Widget\\OAuth')
             ->setParameter('provider', $provider)
             ->setParameter('queryParams', $request->getQueryParams())
             ->setParameter('credentialPubKey', $credentialPubKey);
@@ -95,7 +120,7 @@ class SSO implements ControllerInterface {
     public function callback(ServerRequestInterface $request, ResponseInterface $response) : ResponseInterface {
         $provider = $request->getAttribute('provider');
 
-        $command = $this->commandFactory->create('SSO\\Callback')
+        $command = $this->commandFactory->create('Widget\\Callback')
             ->setParameter('provider', $provider)
             ->setParameter('queryParams', $request->getQueryParams());
 

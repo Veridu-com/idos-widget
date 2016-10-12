@@ -12,9 +12,18 @@ namespace App\Validator;
 use Respect\Validation\Validator;
 
 /**
- * SSO Validation Rules.
+ * Widget Validation Rules.
  */
-class SSO implements ValidatorInterface {
+class Widget implements ValidatorInterface {
+    /**
+     * Validates if a token has allowed chars.
+     *
+     * @param string $token The token
+     */
+    public function assertToken($token) {
+        Validator::prnt()->validate($token);
+    }
+
     /**
      * Asserts a valid provider.
      *
