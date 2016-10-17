@@ -92,7 +92,6 @@ class Widget implements ControllerInterface {
     public function oauth(ServerRequestInterface $request, ResponseInterface $response) : ResponseInterface {
         $provider         = $request->getAttribute('provider');
         $credentialPubKey = $request->getAttribute('credentialPubKey');
-        $username         = $request->getAttribute('username');
 
         $command = $this->commandFactory->create('Widget\\OAuth')
             ->setParameter('provider', $provider)

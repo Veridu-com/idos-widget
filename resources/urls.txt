@@ -3,4 +3,4 @@ SSO:
 http://widget.idos.io:8001/index.php/1.0/sso/facebook/4c9184f37cff01bcdc32dc486ec36961
 
 OAuth:
-http://widget.idos.io:8001/index.php/1.0/oauth/facebook/4c9184f37cff01bcdc32dc486ec36961/username
+http://widget.idos.io:8001/index.php/1.0/oauth/facebook/4c9184f37cff01bcdc32dc486ec36961?userToken=MyUserToken
