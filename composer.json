@@ -46,12 +46,6 @@
         "slim/flash": "^0.1.0",
         "veridu/idos-sdk-php": "dev-php7"
     },
-    "repositories": [
-        {
-            "type": "vcs",
-            "url": "https://github.com/flavioheleno/idos-sdk-php"
-        }
-    ],
     "require-dev": {
         "phpunit/phpunit": "@stable",
         "phpunit/php-code-coverage": "^3.0.0",
