@@ -9,11 +9,12 @@ declare(strict_types=1);
 
 namespace App\Handler;
 
-use App\Command\SSO as SSOCommand;
+use App\Command\Widget as WidgetCommand;
 use App\Event;
 use App\Exception;
 use App\Exception\BadRequest;
 use App\Validator\ValidatorInterface;
+use idOS\Auth\StringToken;
 use idOS\SDK as idosSDK;
 use Interop\Container\ContainerInterface;
 use League\Event\Emitter;
@@ -24,9 +25,9 @@ use Slim\Http\Request;
 use Slim\Interfaces\RouterInterface;
 
 /**
- * Handles SSO commands.
+ * Handles Widget commands.
  */
-class SSO implements HandlerInterface {
+class Widget implements HandlerInterface {
     /**
      * Tokens array.
      * 
@@ -74,9 +75,9 @@ class SSO implements HandlerInterface {
      */
     public static function register(ContainerInterface $container) {
         $container[self::class] = function (ContainerInterface $container) {
-            return new \App\Handler\SSO(
+            return new \App\Handler\Widget(
                 $container->get('tokens'),
-                $container->get('validatorFactory')->create('SSO'),
+                $container->get('validatorFactory')->create('Widget'),
                 $container->get('flash'),
                 $container->get('idosSDK'),
                 $container->get('eventEmitter'),
@@ -89,10 +90,13 @@ class SSO implements HandlerInterface {
     /**
      * Class constructor.
      *
-     * @param App\Repository\SSOInterface
-     * @param App\Validator\SSO
-     *
-     * @return void
+     * @param array                              $tokens    The tokens
+     * @param \App\Validator\ValidatorInterface  $validator The validator
+     * @param \Slim\Flash\Messages               $flash     The flash
+     * @param \idosSDK                           $idosSDK   The idos sdk
+     * @param \League\Event\Emitter              $emitter   The emitter
+     * @param \Slim\Interfaces\RouterInterface   $router    The router
+     * @param \Psr\Http\Message\RequestInterface $request   The request
      */
     public function __construct(array $tokens, ValidatorInterface $validator, Messages $flash, idosSDK $idosSDK, Emitter $emitter, RouterInterface $router, RequestInterface $request) {
         $this->tokens    = $tokens;
@@ -107,20 +111,53 @@ class SSO implements HandlerInterface {
     /**
      * Handles user login.
      *
-     * @param App\Command\SSO\Login $command
+     * @param App\Command\Widget\SSO $command
      *
      * @return string The redirect URL
      */
-    public function handleLogin(SSOCommand\Login $command) : string {
+    public function handleSSO(WidgetCommand\SSO $command) : string {
+        $this->flash->addMessage('callee', 'sso');
         $this->validator->assertProvider($command->provider, $this->tokens);
 
         // assert if $command->credentialPubKey exists in idOS
         $this->flash->addMessage('credentialPubKey', $command->credentialPubKey);
-        $this->flash->addMessage('signupHash', $command->queryParams['signupHash']);
+
+        if (isset($command->queryParams['signupHash'])) {
+            $this->flash->addMessage('signupHash', $command->queryParams['signupHash']);
+        }
 
         $this->setOAuthConfig($command->provider, $command->credentialPubKey);
 
-        $this->emitter->emit(new Event\LoginStarted($command->provider, $command->credentialPubKey));
+        $this->emitter->emit(new Event\LoginStarted($command->provider, $command->credentialPubKey, 'sso'));
+
+        return $this->getCallbackUrl();
+    }
+
+    /**
+     * Handles user login.
+     *
+     * @param App\Command\Widget\OAuth $command
+     *
+     * @return string The redirect URL
+     */
+    public function handleOAuth(WidgetCommand\OAuth $command) : string {
+        $this->flash->addMessage('callee', 'oauth');
+        $userToken = $command->queryParams['userToken'] ?? null;
+
+        $this->validator->assertProvider($command->provider, $this->tokens);
+        $this->validator->assertToken($userToken);
+
+        // assert if $command->credentialPubKey exists in idOS
+        $this->flash->addMessage('credentialPubKey', $command->credentialPubKey);
+        $this->flash->addMessage('userToken', $userToken);
+
+        if (isset($command->queryParams['signupHash'])) {
+            $this->flash->addMessage('signupHash', $command->queryParams['signupHash']);
+        }
+
+        $this->setOAuthConfig($command->provider, $command->credentialPubKey);
+
+        $this->emitter->emit(new Event\LoginStarted($command->provider, $command->credentialPubKey, 'oath'));
 
         return $this->getCallbackUrl();
     }
@@ -128,13 +165,14 @@ class SSO implements HandlerInterface {
     /**
      * Handles callback from providers.
      *
-     * @param App\Command\SSO\Callback $command
+     * @param App\Command\Widget\Callback $command
      *
      * @return string The redirect URL
      */
-    public function handleCallback(SSOCommand\Callback $command) : array {
+    public function handleCallback(WidgetCommand\Callback $command) : array {
         $flashedCredentialPubKey = $this->flash->getMessage('credentialPubKey');
         $flashedHash             = $this->flash->getMessage('signupHash');
+        $callee                  = $this->flash->getMessage('callee')[0];
 
         $this->validator->assertProvider($command->provider, $this->tokens);
         $this->validator->assertFlashedPubKey($flashedCredentialPubKey);
@@ -163,18 +201,46 @@ class SSO implements HandlerInterface {
                 break;
         }
 
-        $response = $this->idosSDK
-            ->Sso
-            ->createNew($command->provider, $credentialPubKey, $tokens['token'], $tokens['secret'] ?? '', $signupHash);
+        switch (true) {
+            case $callee === 'sso':
+                    // create a sso register
+                    $response = $this->idosSDK
+                        ->Sso
+                        ->createNew($command->provider, $credentialPubKey, $tokens['token'], $tokens['secret'] ?? '', $signupHash ?? '');
 
-        if (empty($response['data']) && ! empty($response['error'])) {
-            $this->emitter->emit(new Event\LoginFailed($command->provider, $credentialPubKey));
-            throw new Exception\ProcessNotStarted($response['error']['message']);
+                    if (empty($response['data'])) {
+                        $this->emitter->emit(new Event\LoginFailed($command->provider, $credentialPubKey, 'sso'));
+                        throw new Exception\ProcessNotStarted($response['error']['message']);
+                    }
+
+                    $userTokens = $response['data'];
+                break;
+
+            case $callee === 'oauth':
+                    $token       = $this->flash->getMessage('userToken')[0];
+                    $stringToken = new StringToken('userToken', $token);
+                    $this->idosSDK->setAuth($stringToken);
+
+                    $sourceResource = $this->idosSDK->profile('_self')->sources;
+
+                    $response = $sourceResource->createNew($command->provider, [
+                        'access_token' => $tokens['token'],
+                        'token_secret' => $tokens['secret'] ?? null
+                    ]);
+
+                    if (empty($response['data'])) {
+                        $this->emitter->emit(new Event\LoginFailed($command->provider, $credentialPubKey, 'oauth'));
+                        throw new Exception\ProcessNotStarted($response['error']['message']);
+                    }
+                    $userTokens = [
+                        'user_token' => $token
+                    ];
+                break;
         }
 
-        $this->emitter->emit(new Event\LoginSucceeded($command->provider, $credentialPubKey));
+        $this->emitter->emit(new Event\LoginSucceeded($command->provider, $credentialPubKey, $callee));
 
-        return $response['data'];
+        return $userTokens;
     }
 
     /**
@@ -182,7 +248,7 @@ class SSO implements HandlerInterface {
      *
      * @param array $queryParams The query parameters
      *
-     * @throws Exception\Social\LoginFailed
+     * @throws \App\Exception\LoginFailed
      *
      * @return array Access tokens
      */
@@ -212,8 +278,7 @@ class SSO implements HandlerInterface {
      * @param array  $queryParams The query parameters
      * @param string $state       The state
      *
-     * @throws App\Exception\Social\InvalidRequest (description)
-     * @throws Exception\Social\LoginFailed        (description)
+     * @throws Exception\LoginFailed
      *
      * @return <type> ( description_of_the_return_value )
      */
@@ -237,7 +302,7 @@ class SSO implements HandlerInterface {
         elseif ((! empty($queryParams['error'])) && (! is_array($queryParams['error'])))
             $error = 'Provider error: ' . htmlentities(urldecode($queryParams['error']));
 
-        throw new Exception\Social\LoginFailed($error);
+        throw new Exception\LoginFailed($error);
     }
 
     /**
@@ -254,7 +319,7 @@ class SSO implements HandlerInterface {
 
         $port        = empty($uriObject->getPort()) ? '' : ':' . $uriObject->getPort();
         $baseUrl     = 'https://' . $uriObject->getHost() . $port;
-        $uri         = $this->router->pathFor('sso:callback', ['provider' => $providerName]);
+        $uri         = $this->router->pathFor('widget:callback', ['provider' => $providerName]);
         $callbackUrl = $baseUrl . $uri;
 
         $config = [

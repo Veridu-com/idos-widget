@@ -6,27 +6,34 @@
 
 declare(strict_types = 1);
 
-namespace App\Command\SSO;
+namespace App\Command\Widget;
 
 use App\Command\AbstractCommand;
 
 /**
- * SSO "Callback" Command.
+ * Widget "OAuth" Command.
  */
-class Callback extends AbstractCommand {
-    /**
-     * Query params.
-     * 
-     * @var array
-     */
-    public $queryParams;
-
+class SSO extends AbstractCommand {
     /**
      * SSO's provider.
      *
      * @var string
      */
     public $provider;
+
+    /**
+     * SSO's credentialPubKey.
+     *
+     * @var string
+     */
+    public $credentialPubKey;
+
+    /**
+     * Query params.
+     *
+     * @var array
+     */
+    public $queryParams;
 
     /**
      * {@inheritdoc}

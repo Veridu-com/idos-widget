@@ -6,23 +6,29 @@
 
 declare(strict_types = 1);
 
-namespace App\Command\SSO;
+namespace App\Command\Widget;
 
 use App\Command\AbstractCommand;
 
 /**
- * SSO "Login" Command.
+ * Widget "OAuth" Command.
  */
-class Login extends AbstractCommand {
+class OAuth extends AbstractCommand {
     /**
-     * SSO's provider.
+     * OAuth's provider.
      *
      * @var string
      */
     public $provider;
+    /**
+     * User's username.
+     *
+     * @var string
+     */
+    public $username;
 
     /**
-     * SSO's credentialPubKey.
+     * OAuth's credentialPubKey.
      *
      * @var string
      */
