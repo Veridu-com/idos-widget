@@ -318,7 +318,7 @@ class Widget implements HandlerInterface {
         $uriObject = $this->request->getUri();
 
         $port        = empty($uriObject->getPort()) ? '' : ':' . $uriObject->getPort();
-        $baseUrl     = 'https://' . $uriObject->getHost() . $port;
+        $baseUrl     = 'http://' . $uriObject->getHost() . $port;
         $uri         = $this->router->pathFor('widget:callback', ['provider' => $providerName]);
         $callbackUrl = $baseUrl . $uri;
 
