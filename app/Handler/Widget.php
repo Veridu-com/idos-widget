@@ -210,7 +210,7 @@ class Widget implements HandlerInterface {
 
                     if (empty($response['data'])) {
                         $this->emitter->emit(new Event\LoginFailed($command->provider, $credentialPubKey, 'sso'));
-                        throw new Exception\ProcessNotStarted($response['error']['message']);
+                        throw new Exception\ProcessNotStarted();
                     }
 
                     $userTokens = $response['data'];
@@ -220,7 +220,6 @@ class Widget implements HandlerInterface {
                     $token       = $this->flash->getMessage('userToken')[0];
                     $stringToken = new StringToken('userToken', $token);
                     $this->idosSDK->setAuth($stringToken);
-
                     $sourceResource = $this->idosSDK->profile('_self')->sources;
 
                     $response = $sourceResource->createNew($command->provider, [
@@ -318,7 +317,7 @@ class Widget implements HandlerInterface {
         $uriObject = $this->request->getUri();
 
         $port        = empty($uriObject->getPort()) ? '' : ':' . $uriObject->getPort();
-        $baseUrl     = 'http://' . $uriObject->getHost() . $port;
+        $baseUrl     = 'https://' . $uriObject->getHost() . $port;
         $uri         = $this->router->pathFor('widget:callback', ['provider' => $providerName]);
         $callbackUrl = $baseUrl . $uri;
 

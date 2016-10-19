@@ -211,6 +211,7 @@ $container['commandBus'] = function (ContainerInterface $container) {
     }
 
     $commands[Command\ResponseDispatch::class] = Handler\Response::class;
+    $commands[Command\OlcResponse::class] = Handler\Response::class;
     $commands[Command\ResponseRedirect::class] = Handler\Response::class;
     $commands[Command\ResponseHTML::class]     = Handler\Response::class;
 
