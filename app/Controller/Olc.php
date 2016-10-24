@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Exception\NotFound;
 use App\Factory\Command;
 use League\Tactician\CommandBus;
 use Psr\Http\Message\ResponseInterface;
@@ -60,9 +61,18 @@ class Olc implements ControllerInterface {
      */
     public function getOne(ServerRequestInterface $request, ResponseInterface $response) : ResponseInterface {
         $widgetHash       = $request->getAttribute('widgetHash');
-        $widget = $this->idosSDK->Company('veridu-ltd')->widgets->getOne($widgetHash)['data'];
+        
+        $apiResponse = $this->idosSDK->Company('veridu-ltd')->widgets->getOne($widgetHash);
+
+        if (empty($apiResponse['data'])) {
+            throw new NotFound;
+        }
+
+        $widget = $apiResponse['data'];
+
 
         $queryParams = $request->getQueryParams();
+
         $config = $widget['config'];
         $preferences = $config['preferences'] ?? null;
 
@@ -75,6 +85,9 @@ class Olc implements ControllerInterface {
                 'variable' => 'IDOS_EMBEDDED_WIDGET_CONFIG',
                 'data' => [
                     'version' => __VERSION__,
+                    'widget' => [
+                        'credential' => $widget['credential']
+                    ],
                     'preferences' => $preferences ?? null,
                     'providers'   => $config['providers'] ?? null
                 ],
