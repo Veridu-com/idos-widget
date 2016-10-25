@@ -203,41 +203,44 @@ class Widget implements HandlerInterface {
 
         switch (true) {
             case $callee === 'sso':
-                    // create a sso register
-                    $response = $this->idosSDK
-                        ->Sso
-                        ->createNew($command->provider, $credentialPubKey, $tokens['token'], $tokens['secret'] ?? '', $signupHash ?? '');
+                // create a sso register
+                $response = $this->idosSDK
+                    ->Sso
+                    ->createNew($command->provider, $credentialPubKey, $tokens['token'], $tokens['secret'] ?? '', $signupHash ?? '');
 
                 if ((! $response['status']) || (empty($response['data']))) {
                     $this->emitter->emit(new Event\LoginFailed($command->provider, $credentialPubKey, 'sso'));
+                    if (empty($response['error']['message'])) {
+                        throw new Exception\ProcessNotStarted();
+                    }
+
                     throw new Exception\ProcessNotStarted($response['error']['message']);
                 }
 
-                    $userTokens = $response['data'];
+                $userTokens = $response['data'];
                 break;
 
             case $callee === 'oauth':
-                    $token       = $this->flash->getMessage('userToken')[0];
-                    $stringToken = new StringToken('userToken', $token);
-                    $this->idosSDK->setAuth($stringToken);
+                $token       = $this->flash->getMessage('userToken')[0];
+                $stringToken = new StringToken('userToken', $token);
+                $this->idosSDK->setAuth($stringToken);
+                $sourceResource = $this->idosSDK->profile('_self')->sources;
 
-                    $sourceResource = $this->idosSDK->profile('_self')->sources;
-
-                    $response = $sourceResource->createNew(
-                        $command->provider, [
-                        'access_token' => $tokens['token'],
-                        'token_secret' => $tokens['secret'] ?? null
-                        ]
-                    );
+                $response = $sourceResource->createNew(
+                    $command->provider, [
+                    'access_token' => $tokens['token'],
+                    'token_secret' => $tokens['secret'] ?? null
+                    ]
+                );
 
                 if (empty($response['data'])) {
                     $this->emitter->emit(new Event\LoginFailed($command->provider, $credentialPubKey, 'oauth'));
                     throw new Exception\ProcessNotStarted($response['error']['message']);
                 }
 
-                    $userTokens = [
-                        'user_token' => $token
-                    ];
+                $userTokens = [
+                    'user_token' => $token
+                ];
                 break;
         }
 

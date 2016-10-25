@@ -9,6 +9,7 @@ declare(strict_types = 1);
 
 namespace App\Handler;
 
+use App\Command\OlcResponse;
 use App\Command\ResponseDispatch;
 use App\Command\ResponseHTML;
 use App\Command\ResponseRedirect;
@@ -207,5 +208,27 @@ class Response implements HandlerInterface {
         }
 
         return $this->jsonResponse($response, $body, $statusCode);
+    }
+
+
+    /**
+     * Handles OLC widget responses.
+     *
+     * @param      \App\Command\OlcResponse  $command  The command
+     *
+     * @return     <type>                           ( description_of_the_return_value )
+     */
+    public function handleOlcResponse(OlcResponse $command) : ResponseInterface {
+        $windowData = json_encode($command->body['window']['data']);
+        
+        $body = "
+            window.{$command->body['window']['variable']} = $windowData;
+            {$command->body['script']}
+        ";
+
+        return $command->response
+            ->withStatus(200)
+            ->withHeader('Content-Type', 'application/javascript')
+            ->write($body);
     }
 }
