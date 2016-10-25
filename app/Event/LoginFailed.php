@@ -5,7 +5,7 @@
  * All rights reserved.
  */
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace App\Event;
 
@@ -15,7 +15,7 @@ namespace App\Event;
 class LoginFailed extends AbstractEvent {
     /**
      * Related provider.
-     * 
+     *
      * @var string
      */
     public $provider;

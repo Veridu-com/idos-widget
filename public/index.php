@@ -24,6 +24,7 @@ if ($appSettings['debug']) {
 $app = new Slim\App(
     ['settings' => $appSettings]
 );
+
 require_once __DIR__ . '/../config/dependencies.php';
 
 require_once __DIR__ . '/../config/middleware.php';

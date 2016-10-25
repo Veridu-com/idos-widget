@@ -59,12 +59,10 @@ return [
         ]
     ],
     'paypal' => [
-        'sso'        => true,
-        'sso_key'    => '***REMOVED***',
-        'sso_secret' => '***REMOVED***',
-        'key'        => '***REMOVED***',
-        'secret'     => '***REMOVED***',
-        'scope'      => [
+        'sso'    => true,
+        'key'    => '***REMOVED***',
+        'secret' => '***REMOVED***',
+        'scope'  => [
             'https://uri.paypal.com/services/paypalattributes',
             'profile', 'email', 'address', 'phone', 'openid'
         ]

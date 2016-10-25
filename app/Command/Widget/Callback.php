@@ -16,7 +16,7 @@ use App\Command\AbstractCommand;
 class Callback extends AbstractCommand {
     /**
      * Query params.
-     * 
+     *
      * @var array
      */
     public $queryParams;
