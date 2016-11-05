@@ -210,7 +210,7 @@ class Widget implements HandlerInterface {
 
                     if (empty($response['data'])) {
                         $this->emitter->emit(new Event\LoginFailed($command->provider, $credentialPubKey, 'sso'));
-                        throw new Exception\ProcessNotStarted();
+                        throw new Exception\ProcessNotStarted($response['error']['message'] ?? 'Process failed to start.');
                     }
 
                     $userTokens = $response['data'];
