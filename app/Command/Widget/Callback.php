@@ -29,6 +29,13 @@ class Callback extends AbstractCommand {
     public $provider;
 
     /**
+     * The response.
+     *
+     * @var \Psr\Http\Message\ResponseInterface
+     */
+    public $response;
+
+    /**
      * {@inheritdoc}
      */
     public function setParameters(array $parameters) : self {

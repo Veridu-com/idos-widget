@@ -58,7 +58,7 @@ class Widget implements RouteInterface {
     private static function sso(App $app) {
         $app
             ->get(
-                '/sso/{provider:[a-zA-Z0-9_-]+}/{credentialPubKey:[a-zA-Z0-9_-]+}',
+                '/sso/{provider:[a-zA-Z0-9_-]+}/{companySlug:[a-z0-9_-]+}/{credentialPubKey:[a-zA-Z0-9_-]+}',
                 'App\Controller\Widget:sso'
             )
             ->setName('widget:sso');
@@ -76,7 +76,7 @@ class Widget implements RouteInterface {
     private static function oauth(App $app) {
         $app
             ->get(
-                '/oauth/{provider:[a-zA-Z0-9_-]+}/{credentialPubKey:[a-zA-Z0-9_-]+}',
+                '/oauth/{provider:[a-zA-Z0-9_-]+}/{companySlug:[a-z0-9_-]+}/{credentialPubKey:[a-zA-Z0-9_-]+}',
                 'App\Controller\Widget:oauth'
             )
             ->setName('widget:oauth');

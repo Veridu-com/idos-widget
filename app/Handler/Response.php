@@ -210,17 +210,16 @@ class Response implements HandlerInterface {
         return $this->jsonResponse($response, $body, $statusCode);
     }
 
-
     /**
      * Handles OLC widget responses.
      *
-     * @param      \App\Command\OlcResponse  $command  The command
+     * @param \App\Command\OlcResponse $command The command
      *
-     * @return     <type>                           ( description_of_the_return_value )
+     * @return \Psr\Http\Message\ResponseInterface
      */
     public function handleOlcResponse(OlcResponse $command) : ResponseInterface {
         $windowData = json_encode($command->body['window']['data']);
-        
+
         $body = "
             window.{$command->body['window']['variable']} = $windowData;
             {$command->body['script']}
