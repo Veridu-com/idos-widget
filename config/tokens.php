@@ -20,10 +20,7 @@ return [
         'key'    => '***REMOVED***',
         'secret' => '***REMOVED***',
         'scope'  => [
-            'email', 'public_profile', 'user_birthday', 'user_education_history',
-            'user_events', 'user_friends', 'user_hometown', 'user_location', 'user_posts',
-            'user_relationships', 'user_tagged_places', 'user_work_history', 'user_photos',
-            'user_likes'
+            'email', 'public_profile', 'user_friends'
         ],
         'options' => [
             'display' => 'popup'
@@ -62,12 +59,10 @@ return [
         ]
     ],
     'paypal' => [
-        'sso'        => true,
-        'sso_key'    => '***REMOVED***',
-        'sso_secret' => '***REMOVED***',
-        'key'        => '***REMOVED***',
-        'secret'     => '***REMOVED***',
-        'scope'      => [
+        'sso'    => true,
+        'key'    => '***REMOVED***',
+        'secret' => '***REMOVED***',
+        'scope'  => [
             'https://uri.paypal.com/services/paypalattributes',
             'profile', 'email', 'address', 'phone', 'openid'
         ]

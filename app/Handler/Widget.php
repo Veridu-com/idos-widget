@@ -5,7 +5,7 @@
  * All rights reserved.
  */
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace App\Handler;
 
@@ -37,42 +37,42 @@ class Widget implements HandlerInterface {
 
     /**
      * Tokens array.
-     * 
+     *
      * @var array
      */
     private $tokens;
 
     /**
      * Flash storage.
-     * 
+     *
      * @var Slim\Flash\Messages
      */
     private $flash;
 
     /**
      * idOS SDK.
-     * 
+     *
      * @var idOS\SDK
      */
     private $idosSDK;
 
     /**
      * Slim Router.
-     * 
+     *
      * Slim\Router
      */
     private $router;
 
     /**
      * Slim Request.
-     * 
+     *
      * \Slim\Http\Request
      */
     private $request;
 
     /**
      * OAuth config array.
-     * 
+     *
      * @var array
      */
     private $OAuthConfig;
@@ -244,37 +244,41 @@ class Widget implements HandlerInterface {
 
         switch (true) {
             case $callee === 'sso':
-                    // create a sso register
-                    $response = $this->idosSDK
-                        ->Sso
-                        ->createNew($command->provider, $credentialPubKey, $tokens['token'], $tokens['secret'] ?? '', $signupHash ?? '');
+                // create a sso register
+                $response = $this->idosSDK
+                    ->Sso
+                    ->createNew($command->provider, $credentialPubKey, $tokens['token'], $tokens['secret'] ?? '', $signupHash ?? '');
 
-                    if (empty($response['data'])) {
-                        $this->emitter->emit(new Event\LoginFailed($command->provider, $credentialPubKey, 'sso'));
-                        throw new Exception\ProcessNotStarted($response['error']['message'] ?? 'Process failed to start.');
-                    }
-
-                    $userTokens = $response['data'];
+                if (empty($response['data'])) {
+                    $this->emitter->emit(new Event\LoginFailed($command->provider, $credentialPubKey, 'sso'));
+                    throw new Exception\ProcessNotStarted($response['error']['message'] ?? 'Process failed to start.');
+                }
+                throw new Exception\ProcessNotStarted($response['error']['message']);
+                $userTokens = $response['data'];
+                
                 break;
 
             case $callee === 'oauth':
-                    $token       = $this->flash->getMessage('userToken')[0];
-                    $stringToken = new StringToken('userToken', $token);
-                    $this->idosSDK->setAuth($stringToken);
-                    $sourceResource = $this->idosSDK->profile('_self')->sources;
+                $token       = $this->flash->getMessage('userToken')[0];
+                $stringToken = new StringToken('userToken', $token);
+                $this->idosSDK->setAuth($stringToken);
+                $sourceResource = $this->idosSDK->profile('_self')->sources;
 
-                    $response = $sourceResource->createNew($command->provider, [
-                        'access_token' => $tokens['token'],
-                        'token_secret' => $tokens['secret'] ?? null
-                    ]);
+                $response = $sourceResource->createNew(
+                    $command->provider, [
+                    'access_token' => $tokens['token'],
+                    'token_secret' => $tokens['secret'] ?? null
+                    ]
+                );
 
-                    if (empty($response['data'])) {
-                        $this->emitter->emit(new Event\LoginFailed($command->provider, $credentialPubKey, 'oauth'));
-                        throw new Exception\ProcessNotStarted($response['error']['message']);
-                    }
-                    $userTokens = [
-                        'user_token' => $token
-                    ];
+                if (empty($response['data'])) {
+                    $this->emitter->emit(new Event\LoginFailed($command->provider, $credentialPubKey, 'oauth'));
+                    throw new Exception\ProcessNotStarted($response['error']['message']);
+                }
+
+                $userTokens = [
+                    'user_token' => $token
+                ];
                 break;
         }
 
@@ -284,7 +288,7 @@ class Widget implements HandlerInterface {
     }
 
     /**
-     * Handles OAuth v 1 callback. 
+     * Handles OAuth v 1 callback.
      *
      * @param array $queryParams The query parameters
      *
@@ -449,7 +453,8 @@ class Widget implements HandlerInterface {
         $service->setHttpClient($client);
         $provider = $service->createService($providerName, $credentials, $storage, $config['scope'], null, $config['version']);
 
-        $this->OAuthConfig = array_merge($config,
+        $this->OAuthConfig = array_merge(
+            $config,
             [
                 'providerName'  => $provider,
                 'storage'       => $storage,
@@ -484,19 +489,22 @@ class Widget implements HandlerInterface {
             case 1:
                 $token = $provider->requestRequestToken();
 
-                return $provider->getAuthorizationUri(array_merge(
-                    ['oauth_token' => $token->getRequestToken()],
-                    $this->OAuthConfig['options'],
-                    $setup
-                ));
+                return $provider->getAuthorizationUri(
+                    array_merge(
+                        ['oauth_token' => $token->getRequestToken()],
+                        $this->OAuthConfig['options'],
+                        $setup
+                    )
+                );
             case 2:
-                return $provider->getAuthorizationUri(array_merge(
-                    $this->OAuthConfig['options'],
-                    $setup
-                ));
+                return $provider->getAuthorizationUri(
+                    array_merge(
+                        $this->OAuthConfig['options'],
+                        $setup
+                    )
+                );
             default:
                 return;
         }
     }
-
 }

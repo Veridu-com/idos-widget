@@ -5,7 +5,7 @@
  * All rights reserved.
  */
 
-declare(strict_types=1);
+declare(strict_types = 1);
 
 namespace App\Event;
 
@@ -15,14 +15,14 @@ namespace App\Event;
 class LoginStarted extends AbstractEvent {
     /**
      * Related provider.
-     * 
+     *
      * @var string
      */
     public $provider;
 
     /**
      * Related provider.
-     * 
+     *
      * @var string
      */
     public $credentialPubKey;

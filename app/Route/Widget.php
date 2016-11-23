@@ -39,7 +39,7 @@ class Widget implements RouteInterface {
             );
         };
 
-        $container            = $app->getContainer();
+        $container = $app->getContainer();
 
         self::sso($app);
         self::oauth($app);
@@ -50,7 +50,7 @@ class Widget implements RouteInterface {
      * Redirects user to provider's oAuth screen.
      *
      * @apiEndpoint GET /sso/{provider}
-     * 
+     *
      * @param \Slim\App $app
      *
      * @return void
@@ -68,7 +68,7 @@ class Widget implements RouteInterface {
      * Extract oAuth tokens then send to idOS.
      *
      * @apiEndpoint GET /oauth/{provider}
-     * 
+     *
      * @param \Slim\App $app
      *
      * @return void
@@ -86,7 +86,7 @@ class Widget implements RouteInterface {
      * Extract oAuth tokens then send to idOS.
      *
      * @apiEndpoint GET /callback/{provider}
-     * 
+     *
      * @param \Slim\App $app
      *
      * @return void
@@ -99,5 +99,4 @@ class Widget implements RouteInterface {
             )
             ->setName('widget:callback');
     }
-
 }
