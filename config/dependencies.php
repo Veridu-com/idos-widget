@@ -320,6 +320,6 @@ $container['blade'] = function () {
 // idOS Credentials
 $container['idosCredentials'] = function () use ($container) {
     $settings = $container->get('settings');
+
     return $settings['idos-credentials'];
 };
-

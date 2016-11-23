@@ -27,7 +27,7 @@ class SSO extends AbstractCommand {
      * @var string
      */
     public $credentialPubKey;
-    
+
     /**
      * SSO's company slug.
      *

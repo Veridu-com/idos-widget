@@ -33,7 +33,7 @@ class OAuth extends AbstractCommand {
      * @var string
      */
     public $credentialPubKey;
-    
+
     /**
      * OAuth's company slug.
      *

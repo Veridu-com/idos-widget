@@ -58,9 +58,9 @@ class Olc implements ControllerInterface {
      * @return \Psr\Http\Message\ResponseInterface
      */
     public function getOne(ServerRequestInterface $request, ResponseInterface $response) : ResponseInterface {
-        $widgetHash       = $request->getAttribute('widgetHash');
+        $widgetHash        = $request->getAttribute('widgetHash');
         $companySlug       = $request->getAttribute('companySlug');
-        $apiResponse = $this->idosSDK->Company($companySlug)->widgets->getOne($widgetHash);
+        $apiResponse       = $this->idosSDK->Company($companySlug)->widgets->getOne($widgetHash);
 
         if (empty($apiResponse['data'])) {
             throw new NotFound();
@@ -83,7 +83,7 @@ class Olc implements ControllerInterface {
                 'data'     => [
                     'version' => __VERSION__,
                     'widget'  => [
-                        'credential' => $widget['credential'],
+                        'credential'  => $widget['credential'],
                         'companySlug' => $companySlug
                     ],
                     'preferences' => $preferences ?? null,

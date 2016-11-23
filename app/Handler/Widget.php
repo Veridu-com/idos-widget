@@ -17,9 +17,9 @@ use App\Exception\SourceNotFound;
 use App\Extension\CreateHTMLResponse;
 use App\Factory\Command as CommandFactory;
 use App\Validator\ValidatorInterface;
+use idOS\Auth\CredentialToken;
 use idOS\Auth\StringToken;
 use idOS\SDK as idosSDK;
-use idOS\Auth\CredentialToken;
 use Interop\Container\ContainerInterface;
 use League\Event\Emitter;
 use League\Tactician\CommandBus;
@@ -118,15 +118,15 @@ class Widget implements HandlerInterface {
      * @param \App\Factory\Command               $commandFactory The command factory
      */
     public function __construct(array $tokens, ValidatorInterface $validator, Messages $flash, idosSDK $idosSDK, Emitter $emitter, RouterInterface $router, RequestInterface $request, CommandBus $commandBus, CommandFactory $commandFactory, array $idosCredentials) {
-        $this->tokens           = $tokens;
-        $this->validator        = $validator;
-        $this->flash            = $flash;
-        $this->idosSDK          = $idosSDK;
-        $this->emitter          = $emitter;
-        $this->router           = $router;
-        $this->request          = $request;
-        $this->commandBus       = $commandBus;
-        $this->commandFactory   = $commandFactory;
+        $this->tokens            = $tokens;
+        $this->validator         = $validator;
+        $this->flash             = $flash;
+        $this->idosSDK           = $idosSDK;
+        $this->emitter           = $emitter;
+        $this->router            = $router;
+        $this->request           = $request;
+        $this->commandBus        = $commandBus;
+        $this->commandFactory    = $commandFactory;
         $this->idosCredentials   = $idosCredentials;
     }
 
@@ -223,7 +223,7 @@ class Widget implements HandlerInterface {
         }
 
         $credentialPubKey = $flashedCredentialPubKey[0];
-        $companySlug = $flashedCompanySlug[0];
+        $companySlug      = $flashedCompanySlug[0];
 
         // assert if $command->credentialPubKey exists in idOS
         $this->setOAuthConfig($command->provider, $companySlug, $credentialPubKey);
@@ -348,9 +348,9 @@ class Widget implements HandlerInterface {
     /**
      * Gets the provider tokens.
      *
-     * @param      array   $settings  The settings
+     * @param array $settings The settings
      *
-     * @return     array  The formatted provider tokens.
+     * @return array The formatted provider tokens.
      */
     private function extractProviderTokens(array $settings) : array {
         $providerTokens = [];
@@ -360,11 +360,32 @@ class Widget implements HandlerInterface {
         }
 
         foreach ($settings as $key => $setting) {
-            $key = last(explode('.', $setting['property']));
+            $key                  = last(explode('.', $setting['property']));
             $providerTokens[$key] = $setting['value'];
         }
 
         return $providerTokens;
+    }
+
+    /**
+     * Validate provider tokens.
+     *
+     * @param array $tokens The tokens
+     *
+     * @return bool
+     */
+    public function validateTokens(array $tokens) : bool {
+        if (! count($tokens)) {
+            return false;
+        }
+
+        foreach ($tokens as $token) {
+            if (empty($token)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -381,26 +402,26 @@ class Widget implements HandlerInterface {
             ->Company($companySlug)
             ->Settings
             ->listAll([
-                'section' => 'AppTokens',
+                'section'  => 'AppTokens',
                 'property' => sprintf('%s.%s.*', $credentialPubKey, $providerName)
             ]);
 
         $providerTokens = $this->extractProviderTokens($response['data']);
 
         // try company settings
-        if (! count($providerTokens)) {
+        if (! $this->validateTokens($providerTokens)) {
             $response = $this->idosSDK
                 ->Company($companySlug)
                 ->Settings
                 ->listAll([
-                    'section' => 'AppTokens',
+                    'section'  => 'AppTokens',
                     'property' => sprintf('%s.*', $providerName)
                 ]);
             $providerTokens = $this->extractProviderTokens($response['data']);
         }
 
         // gets default tokens
-        if (! count($providerTokens)) {
+        if (! $this->validateTokens($providerTokens)) {
             $providerTokens = $this->tokens[$providerName];
         }
 
