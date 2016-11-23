@@ -253,7 +253,7 @@ class Widget implements HandlerInterface {
                     $this->emitter->emit(new Event\LoginFailed($command->provider, $credentialPubKey, 'sso'));
                     throw new Exception\ProcessNotStarted($response['error']['message'] ?? 'Process failed to start.');
                 }
-                throw new Exception\ProcessNotStarted($response['error']['message']);
+
                 $userTokens = $response['data'];
                 
                 break;
@@ -464,7 +464,6 @@ class Widget implements HandlerInterface {
                 'OAUTH_VERSION' => $provider::OAUTH_VERSION
             ]
         );
-        // set flash of callback url
     }
 
     private function getCallbackUrl() {
