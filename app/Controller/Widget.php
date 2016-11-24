@@ -9,6 +9,7 @@ declare(strict_types = 1);
 
 namespace App\Controller;
 
+use App\Exception\ProcessNotStarted;
 use App\Factory\Command;
 use League\Tactician\CommandBus;
 use Psr\Http\Message\ResponseInterface;
@@ -118,19 +119,33 @@ class Widget implements ControllerInterface {
      */
     public function callback(ServerRequestInterface $request, ResponseInterface $response) : ResponseInterface {
         $provider = $request->getAttribute('provider');
+        $isSignup = ! empty($this->flash->getMessage('signupHash'));
 
         $command = $this->commandFactory->create('Widget\\Callback')
             ->setParameter('provider', $provider)
             ->setParameter('queryParams', $request->getQueryParams());
 
-        $tokens = $this->commandBus->handle($command);
+        try {
+            $tokens = $this->commandBus->handle($command);
+            $command = $this->commandFactory->create('ResponseHTML');
+            $command
+                ->setParameter('viewPath', 'login')
+                ->setParameter('viewParams', ['tokens' => $tokens, 'source' => $provider])
+                ->setParameter('response', $response);
 
-        $command = $this->commandFactory->create('ResponseHTML');
-        $command
-            ->setParameter('viewPath', 'login')
-            ->setParameter('viewParams', ['tokens' => $tokens, 'source' => $provider])
-            ->setParameter('response', $response);
+            return $this->commandBus->handle($command);
 
-        return $this->commandBus->handle($command);
+        } catch (ProcessNotStarted $e) {
+            $viewPath = $isSignup ? 'api.signup-error' : 'api.login-error';
+
+            $command = $this->commandFactory->create('ResponseHTML');
+            $command
+                ->setParameter('viewPath', $viewPath)
+                ->setParameter('viewParams', [ 'message' => $e->getMessage() ])
+                ->setParameter('response', $response);
+
+            return $this->commandBus->handle($command);
+        }
+
     }
 }

@@ -13,11 +13,16 @@ use App\Command\Widget as WidgetCommand;
 use App\Event;
 use App\Exception;
 use App\Exception\BadRequest;
+use App\Exception\SourceNotFound;
+use App\Extension\CreateHTMLResponse;
+use App\Factory\Command as CommandFactory;
 use App\Validator\ValidatorInterface;
+use idOS\Auth\CredentialToken;
 use idOS\Auth\StringToken;
 use idOS\SDK as idosSDK;
 use Interop\Container\ContainerInterface;
 use League\Event\Emitter;
+use League\Tactician\CommandBus;
 use Psr\Http\Message\RequestInterface;
 use Respect\Validation\Validator;
 use Slim\Flash\Messages;
@@ -28,6 +33,8 @@ use Slim\Interfaces\RouterInterface;
  * Handles Widget commands.
  */
 class Widget implements HandlerInterface {
+    use CreateHTMLResponse;
+
     /**
      * Tokens array.
      *
@@ -71,6 +78,13 @@ class Widget implements HandlerInterface {
     private $OAuthConfig;
 
     /**
+     * idOS Credentials.
+     * 
+     * @var array
+     */
+    private $idosCredentials;
+
+    /**
      * {@inheritdoc}
      */
     public static function register(ContainerInterface $container) {
@@ -82,7 +96,10 @@ class Widget implements HandlerInterface {
                 $container->get('idosSDK'),
                 $container->get('eventEmitter'),
                 $container->get('router'),
-                $container->get('request')
+                $container->get('request'),
+                $container->get('commandBus'),
+                $container->get('commandFactory'),
+                $container->get('idosCredentials')
             );
         };
     }
@@ -90,22 +107,27 @@ class Widget implements HandlerInterface {
     /**
      * Class constructor.
      *
-     * @param array                              $tokens    The tokens
-     * @param \App\Validator\ValidatorInterface  $validator The validator
-     * @param \Slim\Flash\Messages               $flash     The flash
-     * @param \idosSDK                           $idosSDK   The idos sdk
-     * @param \League\Event\Emitter              $emitter   The emitter
-     * @param \Slim\Interfaces\RouterInterface   $router    The router
-     * @param \Psr\Http\Message\RequestInterface $request   The request
+     * @param array                              $tokens         The tokens
+     * @param \App\Validator\ValidatorInterface  $validator      The validator
+     * @param \Slim\Flash\Messages               $flash          The flash
+     * @param \idosSDK                           $idosSDK        The idos sdk
+     * @param \League\Event\Emitter              $emitter        The emitter
+     * @param \Slim\Interfaces\RouterInterface   $router         The router
+     * @param \Psr\Http\Message\RequestInterface $request        The request
+     * @param \League\Tactician\CommandBus       $commandBus     The command bus
+     * @param \App\Factory\Command               $commandFactory The command factory
      */
-    public function __construct(array $tokens, ValidatorInterface $validator, Messages $flash, idosSDK $idosSDK, Emitter $emitter, RouterInterface $router, RequestInterface $request) {
-        $this->tokens    = $tokens;
-        $this->validator = $validator;
-        $this->flash     = $flash;
-        $this->idosSDK   = $idosSDK;
-        $this->emitter   = $emitter;
-        $this->router    = $router;
-        $this->request   = $request;
+    public function __construct(array $tokens, ValidatorInterface $validator, Messages $flash, idosSDK $idosSDK, Emitter $emitter, RouterInterface $router, RequestInterface $request, CommandBus $commandBus, CommandFactory $commandFactory, array $idosCredentials) {
+        $this->tokens            = $tokens;
+        $this->validator         = $validator;
+        $this->flash             = $flash;
+        $this->idosSDK           = $idosSDK;
+        $this->emitter           = $emitter;
+        $this->router            = $router;
+        $this->request           = $request;
+        $this->commandBus        = $commandBus;
+        $this->commandFactory    = $commandFactory;
+        $this->idosCredentials   = $idosCredentials;
     }
 
     /**
@@ -113,20 +135,26 @@ class Widget implements HandlerInterface {
      *
      * @param App\Command\Widget\SSO $command
      *
-     * @return string The redirect URL
+     * @return mixed string The redirect URL | \Psr\Http\Message\ResponseInterface The HTML error response
      */
-    public function handleSSO(WidgetCommand\SSO $command) : string {
+    public function handleSSO(WidgetCommand\SSO $command) {
         $this->flash->addMessage('callee', 'sso');
-        $this->validator->assertProvider($command->provider, $this->tokens);
+
+        try {
+            $this->validator->assertSource($command->provider, $this->tokens);
+        } catch(SourceNotFound $e) {
+            return $this->createHTMLResonse($command->response, $this->commandBus, $this->commandFactory, 'error.provider-not-found', ['message' => $e->getMessage()]);
+        }
 
         // assert if $command->credentialPubKey exists in idOS
         $this->flash->addMessage('credentialPubKey', $command->credentialPubKey);
+        $this->flash->addMessage('companySlug', $command->companySlug);
 
         if (isset($command->queryParams['signupHash'])) {
             $this->flash->addMessage('signupHash', $command->queryParams['signupHash']);
         }
 
-        $this->setOAuthConfig($command->provider, $command->credentialPubKey);
+        $this->setOAuthConfig($command->provider, $command->companySlug, $command->credentialPubKey);
 
         $this->emitter->emit(new Event\LoginStarted($command->provider, $command->credentialPubKey, 'sso'));
 
@@ -138,24 +166,30 @@ class Widget implements HandlerInterface {
      *
      * @param App\Command\Widget\OAuth $command
      *
-     * @return string The redirect URL
+     * @return mixed string The redirect URL | \Psr\Http\Message\ResponseInterface The HTML error response
      */
-    public function handleOAuth(WidgetCommand\OAuth $command) : string {
+    public function handleOAuth(WidgetCommand\OAuth $command) {
         $this->flash->addMessage('callee', 'oauth');
         $userToken = $command->queryParams['userToken'] ?? null;
 
-        $this->validator->assertProvider($command->provider, $this->tokens);
+        try {
+            $this->validator->assertSource($command->provider, $this->tokens);
+        } catch(SourceNotFound $e) {
+            return $this->createHTMLResonse($command->response, $this->commandBus, $this->commandFactory, 'error.provider-not-found', ['message' => $e->getMessage()]);
+        }
+
         $this->validator->assertToken($userToken);
 
         // assert if $command->credentialPubKey exists in idOS
         $this->flash->addMessage('credentialPubKey', $command->credentialPubKey);
+        $this->flash->addMessage('companySlug', $command->companySlug);
         $this->flash->addMessage('userToken', $userToken);
 
         if (isset($command->queryParams['signupHash'])) {
             $this->flash->addMessage('signupHash', $command->queryParams['signupHash']);
         }
 
-        $this->setOAuthConfig($command->provider, $command->credentialPubKey);
+        $this->setOAuthConfig($command->provider, $command->companySlug, $command->credentialPubKey);
 
         $this->emitter->emit(new Event\LoginStarted($command->provider, $command->credentialPubKey, 'oath'));
 
@@ -170,11 +204,17 @@ class Widget implements HandlerInterface {
      * @return string The redirect URL
      */
     public function handleCallback(WidgetCommand\Callback $command) : array {
+        $flashedCompanySlug      = $this->flash->getMessage('companySlug');
         $flashedCredentialPubKey = $this->flash->getMessage('credentialPubKey');
         $flashedHash             = $this->flash->getMessage('signupHash');
         $callee                  = $this->flash->getMessage('callee')[0];
 
-        $this->validator->assertProvider($command->provider, $this->tokens);
+        try {
+            $this->validator->assertSource($command->provider, $this->tokens);
+        } catch(SourceNotFound $e) {
+            return $this->createHTMLResonse($command->response, $this->commandBus, $this->commandFactory, 'error.provider-not-found', ['message' => $e->getMessage()]);
+        }
+
         $this->validator->assertFlashedPubKey($flashedCredentialPubKey);
 
         $signupHash = null;
@@ -183,9 +223,10 @@ class Widget implements HandlerInterface {
         }
 
         $credentialPubKey = $flashedCredentialPubKey[0];
+        $companySlug      = $flashedCompanySlug[0];
 
         // assert if $command->credentialPubKey exists in idOS
-        $this->setOAuthConfig($command->provider, $credentialPubKey);
+        $this->setOAuthConfig($command->provider, $companySlug, $credentialPubKey);
 
         switch ($this->OAuthConfig['OAUTH_VERSION']) {
             case 1:
@@ -208,16 +249,13 @@ class Widget implements HandlerInterface {
                     ->Sso
                     ->createNew($command->provider, $credentialPubKey, $tokens['token'], $tokens['secret'] ?? '', $signupHash ?? '');
 
-                if ((! $response['status']) || (empty($response['data']))) {
+                if (empty($response['data'])) {
                     $this->emitter->emit(new Event\LoginFailed($command->provider, $credentialPubKey, 'sso'));
-                    if (empty($response['error']['message'])) {
-                        throw new Exception\ProcessNotStarted();
-                    }
-
-                    throw new Exception\ProcessNotStarted($response['error']['message']);
+                    throw new Exception\ProcessNotStarted($response['error']['message'] ?? 'Process failed to start.');
                 }
 
                 $userTokens = $response['data'];
+                
                 break;
 
             case $callee === 'oauth':
@@ -286,7 +324,7 @@ class Widget implements HandlerInterface {
      *
      * @throws Exception\LoginFailed
      *
-     * @return <type> ( description_of_the_return_value )
+     * @return array
      */
     private function handleCallbackOAuth2(array $queryParams, $state) : array {
         if (isset($queryParams['code'], $queryParams['state'])) {
@@ -306,9 +344,52 @@ class Widget implements HandlerInterface {
         elseif (! empty($queryParams['error']['message']))
             $error = htmlentities(urldecode($queryParams['error']['message']));
         elseif ((! empty($queryParams['error'])) && (! is_array($queryParams['error'])))
-            $error = 'Provider error: ' . htmlentities(urldecode($queryParams['error']));
+            $error = 'Source error: ' . htmlentities(urldecode($queryParams['error']));
 
         throw new Exception\LoginFailed($error);
+    }
+
+    /**
+     * Gets the provider tokens.
+     *
+     * @param array $settings The settings
+     *
+     * @return array The formatted provider tokens.
+     */
+    private function extractProviderTokens(array $settings) : array {
+        $providerTokens = [];
+
+        if (! count($settings)) {
+            return $providerTokens;
+        }
+
+        foreach ($settings as $key => $setting) {
+            $key                  = last(explode('.', $setting['property']));
+            $providerTokens[$key] = $setting['value'];
+        }
+
+        return $providerTokens;
+    }
+
+    /**
+     * Validate provider tokens.
+     *
+     * @param array $tokens The tokens
+     *
+     * @return bool
+     */
+    public function validateTokens(array $tokens) : bool {
+        if (! count($tokens)) {
+            return false;
+        }
+
+        foreach ($tokens as $token) {
+            if (empty($token)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -316,10 +397,37 @@ class Widget implements HandlerInterface {
      *
      * @param string $provider The provider
      */
-    private function setOAuthConfig(string $providerName, string $credentialPubKey) {
-        // @FIXME
-        // load customer configuration here
-        $providerTokens = $this->tokens[$providerName];
+    private function setOAuthConfig(string $providerName, string $companySlug, string $credentialPubKey) {
+        $credentialToken = new CredentialToken($credentialPubKey, $this->idosCredentials['public'], $this->idosCredentials['private']);
+        $this->idosSDK->setAuth($credentialToken);
+
+        // try api key settings
+        $response = $this->idosSDK
+            ->Company($companySlug)
+            ->Settings
+            ->listAll([
+                'section'  => 'AppTokens',
+                'property' => sprintf('%s.%s.*', $credentialPubKey, $providerName)
+            ]);
+
+        $providerTokens = $this->extractProviderTokens($response['data']);
+
+        // try company settings
+        if (! $this->validateTokens($providerTokens)) {
+            $response = $this->idosSDK
+                ->Company($companySlug)
+                ->Settings
+                ->listAll([
+                    'section'  => 'AppTokens',
+                    'property' => sprintf('%s.*', $providerName)
+                ]);
+            $providerTokens = $this->extractProviderTokens($response['data']);
+        }
+
+        // gets default tokens
+        if (! $this->validateTokens($providerTokens)) {
+            $providerTokens = $this->tokens[$providerName];
+        }
 
         $uriObject = $this->request->getUri();
 
@@ -356,7 +464,6 @@ class Widget implements HandlerInterface {
                 'OAUTH_VERSION' => $provider::OAUTH_VERSION
             ]
         );
-        // set flash of callback url
     }
 
     private function getCallbackUrl() {
@@ -400,3 +507,4 @@ class Widget implements HandlerInterface {
         }
     }
 }
+
