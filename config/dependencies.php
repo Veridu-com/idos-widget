@@ -233,7 +233,7 @@ $container['commandBus'] = function (ContainerInterface $container) : CommandBus
     }
 
     $commands[Command\ResponseDispatch::class] = Handler\Response::class;
-    $commands[Command\OlcResponse::class] = Handler\Response::class;
+    $commands[Command\OlcResponse::class]      = Handler\Response::class;
     $commands[Command\ResponseRedirect::class] = Handler\Response::class;
     $commands[Command\ResponseHTML::class]     = Handler\Response::class;
 
@@ -339,4 +339,11 @@ $container['blade'] = function () {
     $cache = __DIR__ . '/../resources/views/cache';
 
     return new Blade($views, $cache);
+};
+
+// idOS Credentials
+$container['idosCredentials'] = function () use ($container) {
+    $settings = $container->get('settings');
+
+    return $settings['idos-credentials'];
 };

@@ -29,11 +29,25 @@ class SSO extends AbstractCommand {
     public $credentialPubKey;
 
     /**
+     * SSO's company slug.
+     *
+     * @var string
+     */
+    public $companySlug;
+
+    /**
      * Query params.
      *
      * @var array
      */
     public $queryParams;
+
+    /**
+     * The response.
+     *
+     * @var \Psr\Http\Message\ResponseInterface
+     */
+    public $response;
 
     /**
      * {@inheritdoc}
