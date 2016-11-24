@@ -54,7 +54,7 @@ class Olc implements RouteInterface {
     private static function getOne(App $app) {
         $app
             ->get(
-                '/olc/{widgetHash:[a-z0-9_-]+}',
+                '/olc/{companySlug:[a-z0-9_-]+}/{widgetHash:[a-z0-9_-]+}',
                 'App\Controller\Olc:getOne'
             )
             ->setName('widgets:olc');
