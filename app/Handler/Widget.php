@@ -255,7 +255,7 @@ class Widget implements HandlerInterface {
                 }
 
                 $userTokens = $response['data'];
-                
+
                 break;
 
             case $callee === 'oauth':
