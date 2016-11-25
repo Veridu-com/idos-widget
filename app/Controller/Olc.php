@@ -72,6 +72,7 @@ class Olc implements ControllerInterface {
 
         $config      = $widget['config'];
         $preferences = $config['preferences'] ?? null;
+        $providers   = $config['providers'] ?? null;
 
         if ($preferences) {
             $preferences['selector']  = $queryParams['selector'] ?? '#idos-embedded-widget';
@@ -86,8 +87,8 @@ class Olc implements ControllerInterface {
                         'credential'  => $widget['credential'],
                         'companySlug' => $companySlug
                     ],
-                    'preferences' => $preferences ?? null,
-                    'providers'   => $config['providers'] ?? null
+                    'preferences' => $preferences,
+                    'providers'   => $providers
                 ],
             ],
             'script' => file_get_contents(__DIR__ . '../../../resources/embedded-widget.js')
