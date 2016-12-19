@@ -333,7 +333,7 @@ $container['idosSDK'] = function (ContainerInterface $container) {
 
     $sdk = \idOS\SDK::create($auth);
 
-    if (! empty($settings['dev']['enabled'])) {
+    if ( isset($settings['dev']) && isset($settings['dev']['enabled'])) {
         $sdk->setBaseUrl($settings['dev']['API_URL']);
     }
 
