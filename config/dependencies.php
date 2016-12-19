@@ -327,10 +327,17 @@ $container['flash'] = function () {
 };
 
 // idOS SDK
-$container['idosSDK'] = function () {
+$container['idosSDK'] = function (ContainerInterface $container) {
+    $settings = $container->get('settings');
     $auth = new \idOS\Auth\None();
 
-    return \idOS\SDK::create($auth);
+    $sdk = \idOS\SDK::create($auth);
+
+    if ( isset($settings['dev']) && isset($settings['dev']['enabled'])) {
+        $sdk->setBaseUrl($settings['dev']['API_URL']);
+    }
+
+    return $sdk;
 };
 
 // Blade templates
