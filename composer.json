@@ -42,9 +42,9 @@
         "swiftmailer/swiftmailer": "^5.4",
         "guzzlehttp/guzzle": "^6.2",
         "symfony/console": "^3.1",
-        "lusitanian/oauth": "^0.8.9",
         "slim/flash": "^0.1.0",
-        "veridu/idos-sdk-php": "dev-php7"
+        "veridu/idos-sdk-php": "dev-php7",
+        "lusitanian/oauth": "dev-master"
     },
     "require-dev": {
         "phpunit/phpunit": "@stable",
