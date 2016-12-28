@@ -26,6 +26,16 @@ class Widget implements ValidatorInterface {
     }
 
     /**
+     * Asserts a valid url.
+     *
+     * @param      string  $url    The url
+     */
+    public function assertUrl($url)
+    {
+        Validator::url()->validate($url);
+    }
+
+    /**
      * Asserts a valid provider.
      *
      * @throws \Respect\Validation\Exceptions\ExceptionInterface

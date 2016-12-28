@@ -140,6 +140,7 @@ class Widget implements HandlerInterface {
      */
     public function handleSSO(WidgetCommand\SSO $command) {
         $this->flash->addMessage('callee', 'sso');
+        $this->setSdkUrl($command->queryParams['apiUrl'] ?? null);
 
         try {
             $this->validator->assertSource($command->provider, $this->tokens);
@@ -164,6 +165,8 @@ class Widget implements HandlerInterface {
      */
     public function handleOAuth(WidgetCommand\OAuth $command) {
         $this->flash->addMessage('callee', 'oauth');
+        $this->setSdkUrl($command->queryParams['apiUrl'] ?? null);
+
         $userToken = $command->queryParams['userToken'] ?? null;
 
         try {
@@ -193,9 +196,12 @@ class Widget implements HandlerInterface {
      * 
      * @return void
      */
-    private function populateFlashedSession(CommandInterface $command) {
+    private function populateFlashedSession(CommandInterface $command) {        
         $this->flash->addMessage('credentialPubKey', $command->credentialPubKey);
         $this->flash->addMessage('companySlug', $command->companySlug);
+        $this->flash->addMessage('apiUrl', $command->queryParams['apiUrl'] ?? null);
+
+        $this->setSdkUrl($command->queryParams['apiUrl'] ?? null);
 
         if (isset($command->queryParams['signupHash'])) {
             $this->flash->addMessage('signupHash', $command->queryParams['signupHash']);
@@ -213,7 +219,10 @@ class Widget implements HandlerInterface {
         $flashedCompanySlug      = $this->flash->getMessage('companySlug');
         $flashedCredentialPubKey = $this->flash->getMessage('credentialPubKey');
         $flashedHash             = $this->flash->getMessage('signupHash');
+        $apiUrl                  = $this->flash->getMessage('apiUrl')[0];
         $callee                  = $this->flash->getMessage('callee')[0];
+
+        $this->setSdkUrl($apiUrl);
 
         try {
             $this->validator->assertSource($command->provider, $this->tokens);
@@ -399,6 +408,24 @@ class Widget implements HandlerInterface {
     }
 
     /**
+     * Sets the sdk url.
+     *
+     * @param      mixed  $url    The url
+     */
+    private function setSdkUrl($url) : self {
+        try {
+            if ($url) {
+                $this->validator->assertUrl($url);
+                $this->idosSDK->setBaseUrl($url);
+            }
+        } catch (\Exception $e) {
+            throw new \RuntimeException('"apiUrl" param is not a valid URL');
+        }
+
+        return $this;
+    }
+
+    /**
      * Set OAuth configuration.
      *
      * @param string $provider The provider
@@ -415,6 +442,11 @@ class Widget implements HandlerInterface {
                 'section'  => 'AppTokens',
                 'property' => sprintf('%s.%s.*', $credentialPubKey, $providerName)
             ]);
+
+        if (! $response['data']) {
+            $msg = sprintf('API Error : %s', ($response['error']['message'] ?? 'Error communicating with the API'));
+            throw new \RuntimeException($msg);
+        }
 
         $providerTokens = $this->extractProviderTokens($response['data']);
 
@@ -438,7 +470,7 @@ class Widget implements HandlerInterface {
         $uriObject = $this->request->getUri();
 
         $port        = empty($uriObject->getPort()) ? '' : ':' . $uriObject->getPort();
-        $baseUrl     = 'https://' . $uriObject->getHost() . $port;
+        $baseUrl     = 'http://' . $uriObject->getHost() . $port;
         $uri         = $this->router->pathFor('widget:callback', ['provider' => $providerName]);
         $callbackUrl = $baseUrl . $uri;
 
