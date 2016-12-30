@@ -443,7 +443,7 @@ class Widget implements HandlerInterface {
                 'property' => sprintf('%s.%s.*', $credentialPubKey, $providerName)
             ]);
 
-        if (! $response['data']) {
+        if (! is_array($response) || ! isset($response['data']) || ! $response['status']) {
             $msg = sprintf('API Error : %s', ($response['error']['message'] ?? 'Error communicating with the API'));
             throw new \RuntimeException($msg);
         }
