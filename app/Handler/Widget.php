@@ -9,6 +9,7 @@ declare(strict_types = 1);
 
 namespace App\Handler;
 
+use App\Command\CommandInterface;
 use App\Command\Widget as WidgetCommand;
 use App\Event;
 use App\Exception;
@@ -17,9 +18,6 @@ use App\Exception\SourceNotFound;
 use App\Extension\CreateHTMLResponse;
 use App\Factory\Command as CommandFactory;
 use App\Validator\ValidatorInterface;
-use idOS\Auth\CredentialToken;
-use idOS\Auth\StringToken;
-use idOS\SDK as idosSDK;
 use Interop\Container\ContainerInterface;
 use League\Event\Emitter;
 use League\Tactician\CommandBus;
@@ -28,6 +26,9 @@ use Respect\Validation\Validator;
 use Slim\Flash\Messages;
 use Slim\Http\Request;
 use Slim\Interfaces\RouterInterface;
+use idOS\Auth\CredentialToken;
+use idOS\Auth\StringToken;
+use idOS\SDK as idosSDK;
 
 /**
  * Handles Widget commands.
@@ -146,14 +147,7 @@ class Widget implements HandlerInterface {
             return $this->createHTMLResonse($command->response, $this->commandBus, $this->commandFactory, 'error.provider-not-found', ['message' => $e->getMessage()]);
         }
 
-        // assert if $command->credentialPubKey exists in idOS
-        $this->flash->addMessage('credentialPubKey', $command->credentialPubKey);
-        $this->flash->addMessage('companySlug', $command->companySlug);
-
-        if (isset($command->queryParams['signupHash'])) {
-            $this->flash->addMessage('signupHash', $command->queryParams['signupHash']);
-        }
-
+        $this->populateFlashedSession($command);
         $this->setOAuthConfig($command->provider, $command->companySlug, $command->credentialPubKey);
 
         $this->emitter->emit(new Event\LoginStarted($command->provider, $command->credentialPubKey, 'sso'));
@@ -180,20 +174,32 @@ class Widget implements HandlerInterface {
 
         $this->validator->assertToken($userToken);
 
-        // assert if $command->credentialPubKey exists in idOS
-        $this->flash->addMessage('credentialPubKey', $command->credentialPubKey);
-        $this->flash->addMessage('companySlug', $command->companySlug);
+        $this->populateFlashedSession($command);
         $this->flash->addMessage('userToken', $userToken);
-
-        if (isset($command->queryParams['signupHash'])) {
-            $this->flash->addMessage('signupHash', $command->queryParams['signupHash']);
-        }
 
         $this->setOAuthConfig($command->provider, $command->companySlug, $command->credentialPubKey);
 
         $this->emitter->emit(new Event\LoginStarted($command->provider, $command->credentialPubKey, 'oath'));
 
         return $this->getCallbackUrl();
+    }
+
+    /**
+     * Populates  the flashed session.
+     * There is a diff between SSO and OAuth methods,
+     * different parameters are set within the functions.
+     *
+     * @param \App\Command\CommandInterface  $command  The command
+     * 
+     * @return void
+     */
+    private function populateFlashedSession(CommandInterface $command) {
+        $this->flash->addMessage('credentialPubKey', $command->credentialPubKey);
+        $this->flash->addMessage('companySlug', $command->companySlug);
+
+        if (isset($command->queryParams['signupHash'])) {
+            $this->flash->addMessage('signupHash', $command->queryParams['signupHash']);
+        }
     }
 
     /**
@@ -255,7 +261,7 @@ class Widget implements HandlerInterface {
                 }
 
                 $userTokens = $response['data'];
-                
+
                 break;
 
             case $callee === 'oauth':
