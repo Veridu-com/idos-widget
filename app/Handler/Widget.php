@@ -478,7 +478,7 @@ class Widget implements HandlerInterface {
             'key'      => $providerTokens['sso_key'] ?? $providerTokens['key'] ?? '',
             'secret'   => $providerTokens['sso_secret'] ?? $providerTokens['secret'] ?? '',
             'callback' => $callbackUrl,
-            'scope'    => $providerTokens['sso_scope'] ?? $providerTokens['scope'] ?? $this->tokens[$providerName]['sso_scope'] ?? $this->tokens[$providerName]['scope'],
+            'scope'    => $providerTokens['sso_scope'] ?? $providerTokens['scope'] ?? $this->tokens[$providerName]['sso_scope'] ?? $this->tokens[$providerName]['scope'] ?? [],
             'options'  => $providerTokens['options'] ?? [],
             'version'  => $providerTokens['version'] ?? '',
         ];
