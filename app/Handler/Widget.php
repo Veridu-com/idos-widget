@@ -80,7 +80,7 @@ class Widget implements HandlerInterface {
 
     /**
      * idOS Credentials.
-     * 
+     *
      * @var array
      */
     private $idosCredentials;
@@ -189,14 +189,13 @@ class Widget implements HandlerInterface {
 
     /**
      * Populates  the flashed session.
-     * There is a diff between SSO and OAuth methods,
-     * different parameters are set within the functions.
+     * There are differences between SSO and OAuth methods, different parameters are set within the functions.
      *
      * @param \App\Command\CommandInterface  $command  The command
-     * 
+     *
      * @return void
      */
-    private function populateFlashedSession(CommandInterface $command) {        
+    private function populateFlashedSession(CommandInterface $command) {
         $this->flash->addMessage('credentialPubKey', $command->credentialPubKey);
         $this->flash->addMessage('companySlug', $command->companySlug);
         $this->flash->addMessage('apiUrl', $command->queryParams['apiUrl'] ?? null);
