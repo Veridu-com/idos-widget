@@ -1,11 +1,11 @@
-# idOS SSO Handler
+# idOS Widget Handler
+
 This service handler is the oAuth layer of idOS.
 
-## API
+# Setup
 
-Recommend `etc/hosts`:
+You can read how to setup the idOS CRA Handler in the [Setup Manual](Setup.md)
 
-`IP	sso.idos.io`
+# Operation
 
-Set up a server:
-`php -S localhost:8001 -t public/`
+You can read how to operate the idOS CRA Handler in the [Operation Manual](Operation.md)

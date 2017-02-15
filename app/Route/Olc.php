@@ -45,8 +45,8 @@ class Olc implements RouteInterface {
     /**
      * Redirects user to provider's oAuth screen.
      *
-     * @apiEndpoint GET /getOne/{provider}
-     * 
+     * @apiEndpoint GET /{companySlug}/{widgetHash}
+     *
      * @param \Slim\App $app
      *
      * @return void
