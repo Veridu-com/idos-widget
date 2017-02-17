@@ -56,7 +56,7 @@
         "squizlabs/php_codesniffer": "@stable",
         "friendsofphp/php-cs-fixer": "@stable",
         "psy/psysh": "@stable",
-        "theseer/phpdox": "@stable",
+        "theseer/phpdox": "dev-master",
         "ext-xsl": "*"
     },
     "config": {

@@ -10,6 +10,7 @@ Constant values can be set in a `config/settings.php` an example of configuratio
 # Running
 
 This is a web application that can be served via php built-in server for development purposes:
+
 ```bash
 php -S localhost:8000 -t public/index.php
 ```

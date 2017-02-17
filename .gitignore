@@ -12,6 +12,8 @@ phinx.yml
 phpdox.xml
 phpunit.xml
 server/docker/
+build/
+VeriduRuleset.xml
 resources/views/cache/*.php
 sftp-config.json
 vendor/
