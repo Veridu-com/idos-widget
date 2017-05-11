@@ -233,7 +233,7 @@ $container['commandBus'] = function (ContainerInterface $container) : CommandBus
     }
 
     $commands[Command\ResponseDispatch::class] = Handler\Response::class;
-    $commands[Command\OlcResponse::class] = Handler\Response::class;
+    $commands[Command\OlcResponse::class]      = Handler\Response::class;
     $commands[Command\ResponseRedirect::class] = Handler\Response::class;
     $commands[Command\ResponseHTML::class]     = Handler\Response::class;
 
@@ -327,10 +327,17 @@ $container['flash'] = function () {
 };
 
 // idOS SDK
-$container['idosSDK'] = function () {
+$container['idosSDK'] = function (ContainerInterface $container) {
+    $settings = $container->get('settings');
     $auth = new \idOS\Auth\None();
 
-    return \idOS\SDK::create($auth);
+    $sdk = \idOS\SDK::create($auth);
+
+    if ( isset($settings['dev']) && isset($settings['dev']['enabled'])) {
+        $sdk->setBaseUrl($settings['dev']['API_URL']);
+    }
+
+    return $sdk;
 };
 
 // Blade templates
@@ -339,4 +346,11 @@ $container['blade'] = function () {
     $cache = __DIR__ . '/../resources/views/cache';
 
     return new Blade($views, $cache);
+};
+
+// idOS Credentials
+$container['idosCredentials'] = function () use ($container) {
+    $settings = $container->get('settings');
+
+    return $settings['idos-credentials'];
 };

@@ -7,14 +7,14 @@
 
 declare(strict_types = 1);
 
-namespace App\Exception\SSO;
+namespace App\Exception;
 
 /**
- * Provider Not Found Exception.
+ * Source Not Found Exception.
  *
  * @see App\Exception\AppException
  */
-class NotFound extends AppException {
+class SourceNotFound extends AppException {
     /**
      * {@inheritdoc}
      */
@@ -22,5 +22,5 @@ class NotFound extends AppException {
     /**
      * {@inheritdoc}
      */
-    protected $message = 'Provider not found.';
+    protected $message = 'Source not found.';
 }

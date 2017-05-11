@@ -11,12 +11,10 @@ namespace App\Controller;
 
 use App\Exception\NotFound;
 use App\Factory\Command;
+use idOS\SDK;
 use League\Tactician\CommandBus;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
-use Slim\Flash\Messages;
-use idOS\Auth\StringToken;
-use idOS\SDK;
 
 class Olc implements ControllerInterface {
     /**
@@ -48,7 +46,7 @@ class Olc implements ControllerInterface {
     ) {
         $this->commandBus     = $commandBus;
         $this->commandFactory = $commandFactory;
-        $this->idosSDK = $idosSDK;
+        $this->idosSDK        = $idosSDK;
     }
 
     /**
@@ -60,21 +58,21 @@ class Olc implements ControllerInterface {
      * @return \Psr\Http\Message\ResponseInterface
      */
     public function getOne(ServerRequestInterface $request, ResponseInterface $response) : ResponseInterface {
-        $widgetHash       = $request->getAttribute('widgetHash');
-        
-        $apiResponse = $this->idosSDK->Company('veridu-ltd')->widgets->getOne($widgetHash);
+        $widgetHash        = $request->getAttribute('widgetHash');
+        $companySlug       = $request->getAttribute('companySlug');
+        $apiResponse       = $this->idosSDK->Company($companySlug)->widgets->getOne($widgetHash);
 
         if (empty($apiResponse['data'])) {
-            throw new NotFound;
+            throw new NotFound();
         }
 
         $widget = $apiResponse['data'];
 
-
         $queryParams = $request->getQueryParams();
 
-        $config = $widget['config'];
+        $config      = $widget['config'];
         $preferences = $config['preferences'] ?? null;
+        $providers   = $config['providers'] ?? null;
 
         if ($preferences) {
             $preferences['selector']  = $queryParams['selector'] ?? '#idos-embedded-widget';
@@ -83,16 +81,17 @@ class Olc implements ControllerInterface {
         $body = [
             'window' => [
                 'variable' => 'IDOS_EMBEDDED_WIDGET_CONFIG',
-                'data' => [
+                'data'     => [
                     'version' => __VERSION__,
-                    'widget' => [
-                        'credential' => $widget['credential']
+                    'widget'  => [
+                        'credential'  => $widget['credential'],
+                        'companySlug' => $companySlug
                     ],
-                    'preferences' => $preferences ?? null,
-                    'providers'   => $config['providers'] ?? null
+                    'preferences' => $preferences,
+                    'providers'   => $providers
                 ],
             ],
-            'script' =>  file_get_contents(__DIR__ . '../../../resources/embedded-widget.js')
+            'script' => file_get_contents(__DIR__ . '../../../resources/embedded-widget.js')
         ];
 
         $command = $this->commandFactory->create('OlcResponse');

@@ -35,11 +35,25 @@ class OAuth extends AbstractCommand {
     public $credentialPubKey;
 
     /**
+     * OAuth's company slug.
+     *
+     * @var string
+     */
+    public $companySlug;
+
+    /**
      * Query params.
      *
      * @var array
      */
     public $queryParams;
+
+    /**
+     * The response.
+     *
+     * @var \Psr\Http\Message\ResponseInterface
+     */
+    public $response;
 
     /**
      * {@inheritdoc}

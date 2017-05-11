@@ -9,6 +9,7 @@ declare(strict_types = 1);
 
 namespace App\Validator;
 
+use App\Exception\SourceNotFound;
 use Respect\Validation\Validator;
 
 /**
@@ -25,18 +26,28 @@ class Widget implements ValidatorInterface {
     }
 
     /**
+     * Asserts a valid url.
+     *
+     * @param      string  $url    The url
+     */
+    public function assertUrl($url)
+    {
+        Validator::url()->validate($url);
+    }
+
+    /**
      * Asserts a valid provider.
      *
      * @throws \Respect\Validation\Exceptions\ExceptionInterface
      *
      * @return void
      */
-    public function assertProvider(string $provider, array $tokens) : bool {
+    public function assertSource(string $provider, array $tokens) : bool {
         if (count($tokens))
             $providers = array_keys($tokens);
 
         if (! in_array($provider, $providers)) {
-            throw new App\Exception\ProviderNotFound();
+            throw new SourceNotFound();
         }
 
         return true;
