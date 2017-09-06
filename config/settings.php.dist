@@ -54,9 +54,9 @@ $appSettings = [
         ]
     ],
     'optimus' => [
-        'prime'   => ***REMOVED***,
-        'inverse' => ***REMOVED***,
-        'random'  => ***REMOVED***
+        'prime'   => 0,
+        'inverse' => 0,
+        'random'  => 0
     ],
     'repository' => [
         'strategy' => 'db',

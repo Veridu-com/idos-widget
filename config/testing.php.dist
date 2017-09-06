@@ -39,9 +39,9 @@ $appSettings = [
         'dsn' => 'mongodb:///tmp/mongodb-27017.sock'
     ],
     'optimus'                           => [
-        'prime'   => ***REMOVED***,
-        'inverse' => ***REMOVED***,
-        'random'  => ***REMOVED***
+        'prime'   => 0,
+        'inverse' => 0,
+        'random'  => 0
     ],
     'strategy'                          => [
         'repository' => 'array'
